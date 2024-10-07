@@ -175,15 +175,26 @@ def signup(request):
         body = json.loads(request.body)
         email = body.get('email')
         password = body.get('password')
+        confirmPassword = body.get('confirmPassword')
+        if password == confirmPassword:
+            
 
-        if User.objects.filter(email=email).exists():
-            return JsonResponse({'error': 'Email already in use.'}, status=400)
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({'error': 'Email already in use.'}, status=400)
 
-        user = User.objects.create_user(username=email, email=email, password=password)
-        user.save()
-        token, created = Token.objects.get_or_create(user=user)
+            user = User.objects.create_user(username=email, email=email, password=password)
+            user.save()
+            token, created = Token.objects.get_or_create(user=user)
 
-        return JsonResponse({'success': 'User created successfully.'}, status=201)
+            return JsonResponse({'success': 'User created successfully.'}, status=201)
+        else:
+            return JsonResponse({'error': 'Password mismatch.'}, status=400)
+    
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def check_auth_status(request):
+    return JsonResponse({'success': 'Auth successful.'}, status=200)
     
 @csrf_exempt
 def login_view(request):
@@ -205,7 +216,7 @@ def login_view(request):
             print(request.session.items())
             return JsonResponse({'success': 'Login successful.', 'token': token.key}, status=200)
         else:
-            print("Authentication failed.")
+            
             return JsonResponse({'error': 'Invalid credentials.'}, status=400)
     
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
