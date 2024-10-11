@@ -16,12 +16,10 @@ from rest_framework.permissions import IsAuthenticated
 def index(request):
     return render(request, 'index.html')
 
-# @login_required
 @api_view(['GET','POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def get_products(request):
-    print(f"Authenticated user: {request.user}")
     if request.method == 'GET':
         products = Product.objects.filter(brand__owner=request.user)
         serializer = ProductSerializer(products, many=True, context={'request': request})
@@ -34,7 +32,7 @@ def get_products(request):
         stock = request.data.get('stock')
         description = request.data.get('description')
         category = request.data.get('category')
-        brand_id = request.data.get('brand')  # Get the brand ID from the request
+        brand_id = request.data.get('brand')
         picture1 = request.FILES.get('picture1')
         picture2 = request.FILES.get('picture2')
         picture3 = request.FILES.get('picture3')
@@ -60,14 +58,8 @@ def get_product(request, pk):
         return JsonResponse(serializer.data)
     
     elif request.method == 'PUT':
-        print("BRAND: ",product.brand)
-        print("OWNER: ",product.brand.owner)
-        print("USER: ",request.user)
-        print("BRAND_ID: ",request.POST.get('brand'))
-        print("DESCRIPTION: ",request.POST.get('description'))
         if product.brand.owner != request.user:
             raise PermissionDenied("You cannot update this product.")
-        # Update the brand's attributes
         name = request.POST.get('name')
         price = request.POST.get('price')
         stock = request.POST.get('stock')
@@ -134,7 +126,6 @@ def get_brands(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def get_brand(request, pk):
-    print("METHOD: ",request.method)
     brand = get_object_or_404(Brand, pk=pk)
     
     if request.method == 'GET':
@@ -147,9 +138,8 @@ def get_brand(request, pk):
         if brand.owner != request.user:
             raise PermissionDenied("You cannot update this brand.")
         
-        # Update the brand's attributes
         name = request.POST.get('name')
-        logo = request.FILES.get('logo')  # Access the uploaded file
+        logo = request.FILES.get('logo')
         
         if name:
             brand.name = name
@@ -203,17 +193,14 @@ def login_view(request):
         email = body.get('email')
         password = body.get('password')
 
-        # Log the incoming email for debugging
-        print(f"Login attempt with email: {email}")
+        
 
         user = authenticate(request=request, username=email, password=password)
 
         if user is not None:
             auth.login(request, user)
-            print(f"User {user.username} is logged in: {request.user.is_authenticated}")
 
             token, created = Token.objects.get_or_create(user=user)
-            print(request.session.items())
             return JsonResponse({'success': 'Login successful.', 'token': token.key}, status=200)
         else:
             
